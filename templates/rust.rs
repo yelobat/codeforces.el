@@ -39,6 +39,26 @@ impl<R: std::io::Read, W: std::io::Write> IO<R, W> {
             .ok()
             .expect("Parse error.")
     }
+    pub fn try_read<T: std::str::FromStr>(&mut self) -> Option<T> {
+        use std::io::Read;
+        let buf = self
+            .0
+            .by_ref()
+            .bytes()
+            .map(|b| b.unwrap())
+            .skip_while(|&b| b == b' ' || b == b'\n' || b == b'\r' || b == b'\t')
+            .take_while(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
+            .collect::<Vec<_>>();
+        if buf.is_empty() {
+            return None;
+        }
+        Some(unsafe {
+            std::str::from_utf8_unchecked(&buf)
+                .parse()
+                .ok()
+                .expect("Parse error.")
+        })
+    }
     pub fn usize0(&mut self) -> usize {
         self.read::<usize>() - 1
     }
