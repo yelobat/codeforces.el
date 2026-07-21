@@ -147,70 +147,12 @@ personal templates; missing files fall back to an empty solution."
      :extension "cpp"
      :compile "g++ -std=c++17 -O2 -Wall -o %b %f"
      :run "%b")
-    ("c"
-     :extension "c"
-     :compile "gcc -std=c11 -O2 -Wall -o %b %f -lm"
-     :run "%b")
-    ("python"
-     :extension "py"
-     :run "python3 %f")
-    ("pypy"
-     :extension "py"
-     :run "pypy3 %f"
-     :template-file "python.py")
-    ("java"
-     :extension "java"
-     :filename "Main.java"
-     :compile "javac -d %d %f"
-     :run "java -cp %d Main")
-    ("kotlin"
-     :extension "kt"
-     :compile "kotlinc %f -include-runtime -d %b.jar"
-     :run "java -jar %b.jar")
     ("rust"
      :extension "rs"
      :compile "rustc --edition 2021 -O -o %b %f"
      :run "%b"
      :extra-files (("Cargo.toml" . "[package]\nname = \"sol\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"sol\"\npath = \"sol.rs\"\n\n[workspace]\n")
-                   (".gitignore" . "/target\n")))
-    ("go"
-     :extension "go"
-     :run "go run %f")
-    ("haskell"
-     :extension "hs"
-     :compile "ghc -O2 -outputdir %d -o %b %f"
-     :run "%b")
-    ("csharp"
-     :extension "cs"
-     :compile "mcs -optimize+ -out:%b.exe %f"
-     :run "mono %b.exe")
-    ("javascript"
-     :extension "js"
-     :run "node %f")
-    ("ruby"
-     :extension "rb"
-     :run "ruby %f")
-    ("perl"
-     :extension "pl"
-     :run "perl %f")
-    ("php"
-     :extension "php"
-     :run "php %f")
-    ("scala"
-     :extension "scala"
-     :compile "scalac -d %d %f"
-     :run "scala -cp %d Main")
-    ("ocaml"
-     :extension "ml"
-     :run "ocaml %f")
-    ("pascal"
-     :extension "pas"
-     :compile "fpc -O2 -o%b %f"
-     :run "%b")
-    ("d"
-     :extension "d"
-     :compile "dmd -O -of%b %f"
-     :run "%b"))
+                   (".gitignore" . "/target\n"))))
   "Alist mapping a language key to a configuration plist.
 See the comment above this variable for the plist keys and the
 `format-spec' escapes supported in :compile and :run."
