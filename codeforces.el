@@ -117,6 +117,9 @@ Set to nil to run tests without a time limit."
 ;;   :template-file  template file in `codeforces-template-directory'
 ;;                   (default "KEY.EXTENSION")
 ;;   :template       literal template string; overrides :template-file
+;;   :extra-files    alist of (FILENAME . CONTENT) also written into a
+;;                   new workspace, for languages whose tooling needs a
+;;                   project file
 ;;
 ;; Commands are run with the workspace as `default-directory' and
 ;; support `format-spec' escapes:
@@ -167,7 +170,9 @@ personal templates; missing files fall back to an empty solution."
     ("rust"
      :extension "rs"
      :compile "rustc --edition 2021 -O -o %b %f"
-     :run "%b")
+     :run "%b"
+     :extra-files (("Cargo.toml" . "[package]\nname = \"sol\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[[bin]]\nname = \"sol\"\npath = \"sol.rs\"\n\n[workspace]\n")
+                   (".gitignore" . "/target\n")))
     ("go"
      :extension "go"
      :run "go run %f")
@@ -1092,6 +1097,13 @@ Prefers an exact :filename match, then the file extension."
                       (equal (plist-get (cdr entry) :extension) ext))
                     codeforces-languages))))
 
+(defun codeforces--write-extra-files (root lang)
+  "Write LANG's :extra-files into workspace ROOT, keeping existing ones."
+  (pcase-dolist (`(,name . ,content) (plist-get lang :extra-files))
+    (let ((file (expand-file-name name root)))
+      (unless (file-exists-p file)
+        (with-temp-file file (insert content))))))
+
 (defun codeforces--workspace-root ()
   "Return the workspace root containing the current buffer's file."
   (let ((root (locate-dominating-file default-directory ".codeforces")))
@@ -1181,6 +1193,7 @@ argument or when the default is nil."
     (unless (file-exists-p solution)
       (with-temp-file solution
         (insert (codeforces--template language lang))))
+    (codeforces--write-extra-files root lang)
     (let ((need-tests (not (file-directory-p (expand-file-name "tests" root))))
           (need-stmt (not (file-exists-p (codeforces--statement-file root)))))
       (when (or need-tests need-stmt)
@@ -1666,9 +1679,12 @@ ring (and system clipboard) for pasting into the submit form."
 (defun codeforces-maybe-enable-mode ()
   "Enable `codeforces-mode' when visiting a file inside a workspace.
 Suitable for `find-file-hook'."
-  (when (and buffer-file-name
-             (locate-dominating-file default-directory ".codeforces"))
-    (codeforces-mode 1)))
+  (when-let* ((_ buffer-file-name)
+              (root (locate-dominating-file default-directory ".codeforces")))
+    (codeforces-mode 1)
+    (when-let* ((key (plist-get (codeforces--read-metadata root) :language))
+                (lang (cdr (assoc key codeforces-languages))))
+      (codeforces--write-extra-files (expand-file-name root) lang))))
 
 ;;;; Problem browser
 
