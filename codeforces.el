@@ -130,17 +130,14 @@ Set to nil to run tests without a time limit."
 ;; Any language Codeforces accepts can be added here.
 
 (defconst codeforces--library-directory
-  (file-name-directory (or load-file-name buffer-file-name
-                           default-directory))
+  (let ((file (or load-file-name buffer-file-name default-directory)))
+    (file-name-directory
+     (file-truename (concat (file-name-sans-extension file) ".el"))))
   "Directory containing codeforces.el, used to locate bundled templates.")
 
-(defcustom codeforces-template-directory
-  (expand-file-name "templates" codeforces--library-directory)
-  "Directory containing per-language solution templates.
-Each language looks up its :template-file here (\"KEY.EXTENSION\" by
-default, e.g. \"cpp.cpp\").  Point this at your own directory to use
-personal templates; missing files fall back to an empty solution."
-  :type 'directory)
+(defcustom codeforces-template-directory nil
+  "Directory containing per-language solution templates."
+  :type '(choice (const :tag "Bundled templates" nil) directory))
 
 (defcustom codeforces-languages
   '(("cpp"
@@ -1012,13 +1009,17 @@ Scrape it first if it has not been fetched yet."
 (defun codeforces--template (key lang)
   "Return the initial solution contents for language KEY with plist LANG.
 A literal :template string wins; otherwise the :template-file (default
-\"KEY.EXTENSION\") is read from `codeforces-template-directory'.  A
-missing template file yields an empty solution."
+\"KEY.EXTENSION\") is read from `codeforces-template-directory'."
   (or (plist-get lang :template)
-      (let ((file (expand-file-name
-                   (or (plist-get lang :template-file)
-                       (concat key "." (plist-get lang :extension)))
-                   codeforces-template-directory)))
+      (let* ((name (or (plist-get lang :template-file)
+                       (concat key "." (plist-get lang :extension))))
+             (bundled (expand-file-name
+                       name (expand-file-name
+                             "templates" codeforces--library-directory)))
+             (file (if codeforces-template-directory
+                       (expand-file-name name codeforces-template-directory)
+                     bundled)))
+        (unless (file-readable-p file) (setq file bundled))
         (if (file-readable-p file)
             (with-temp-buffer
               (insert-file-contents file)
